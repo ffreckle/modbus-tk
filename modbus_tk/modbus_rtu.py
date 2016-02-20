@@ -91,7 +91,8 @@ class RtuMaster(Master):
         super(RtuMaster, self).__init__(self._serial.timeout)
         self._t0 = utils.calculate_rtu_inter_char(self._serial.baudrate)
         self._serial.interCharTimeout = interchar_multiplier * self._t0
-        self.set_timeout(interframe_multiplier * self._t0)
+        self.set_timeout(interframe_multiplier * self._t0*10*10*2)
+        LOGGER.info("interchar_timeout: %s, timeout: %s", self._serial.interCharTimeout, self.get_timeout())
 
     def _do_open(self):
         """Open the given serial port if not already opened"""
@@ -108,10 +109,12 @@ class RtuMaster(Master):
     def set_timeout(self, timeout_in_sec):
         """Change the timeout value"""
         Master.set_timeout(self, timeout_in_sec)
-        self._serial.timeout = timeout_in_sec
+        self._serial.timeout = timeout_in_sec*10
 
     def _send(self, request):
         """Send request to the slave"""
+        # @todo Remove me after testing with EVGrid, this timeout should not be required.
+        #time.sleep(0.5)
         retval = call_hooks("modbus_rtu.RtuMaster.before_send", (self, request))
         if retval is not None:
             request = retval
@@ -120,15 +123,16 @@ class RtuMaster(Master):
         self._serial.flushOutput()
 
         self._serial.write(request)
-        time.sleep(self.get_timeout())
+        #time.sleep(self.get_timeout())
 
     def _recv(self, expected_length=-1):
         """Receive the response from the slave"""
         response = ""
         read_bytes = "dummy"
         while read_bytes:
-            read_bytes = self._serial.read(expected_length if expected_length > 0 else 1)
+            read_bytes = self._serial.read(expected_length if expected_length > 0 else 256)
             response += read_bytes
+            break
             if expected_length >= 0 and len(response) >= expected_length:
                 #if the expected number of byte is received consider that the response is done
                 #improve performance by avoiding end-of-response detection by timeout
@@ -156,8 +160,8 @@ class RtuServer(Server):
         interframe_multiplier: 3.5 by default
         interchar_multiplier: 1.5 by default
         """
-        interframe_multiplier = kwargs.pop('interframe_multiplier', 3.5)
-        interchar_multiplier = kwargs.pop('interchar_multiplier', 1.5)
+        self.interframe_multiplier = kwargs.pop('interframe_multiplier', 3.5)
+        self.interchar_multiplier = kwargs.pop('interchar_multiplier', 1.5)
 
         super(RtuServer, self).__init__(databank if databank else Databank())
 
@@ -215,6 +219,8 @@ class RtuServer(Server):
             while read_bytes:
                 read_bytes = self._serial.read(128)
                 request += read_bytes
+                if request and read_bytes:
+                    LOGGER.debug(">Got bytes: %s : %s", request.encode('hex'), read_bytes.encode('hex'))
 
             #parse the request
             if request:

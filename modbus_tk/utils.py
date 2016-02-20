@@ -25,7 +25,7 @@ def threadsafe_function(fcn):
         lock.acquire()
         try:
             ret = fcn(*args, **kwargs)
-        except Exception, excpt:
+        except Exception as excpt:
             raise excpt
         finally:
             lock.release()
@@ -67,7 +67,7 @@ class ConsoleHandler(logging.Handler):
 
     def emit(self, record):
         """format and print the record on the console"""
-        print self.format(record)
+        print (self.format(record))
 
 
 class LogitHandler(logging.Handler):
@@ -176,7 +176,7 @@ class WorkerThread(object):
                 self._fcts[0](*self._args)
             while self._go.isSet():
                 self._fcts[1](*self._args)
-        except Exception, excpt:
+        except Exception as excpt:
             LOGGER.error("error: %s", str(excpt))
         finally:
             if self._fcts[2]:

@@ -132,7 +132,7 @@ class Master(object):
         """
         raise NotImplementedError()
 
-    @threadsafe_function
+    #@threadsafe_function
     def execute(
         self, slave, function_code, starting_address, quantity_of_x=0, output_value=0, data_format="", expected_length=-1):
         """
@@ -623,7 +623,7 @@ class Slave(object):
                         return struct.pack(">B", function_code) + response_pdu
                 raise Exception("No response for function %d" % function_code)
 
-            except ModbusError, excpt:
+            except ModbusError as excpt:
                 LOGGER.debug(str(excpt))
                 call_hooks("modbus.Slave.on_exception", (self, function_code, excpt))
                 return struct.pack(">BB", function_code+128, excpt.get_exception_code())
@@ -812,9 +812,10 @@ class Databank(object):
                 #make the full response
                 response = query.build_response(response_pdu)
                 return response
-        except Exception, excpt:
+        except Exception as excpt:
             call_hooks("modbus.Databank.on_error", (self, excpt, request_pdu))
             LOGGER.error("handle request failed: " + str(excpt))
+            return
 
         #If the request was not handled correctly, return a server error response
         func_code = 1
@@ -905,7 +906,7 @@ class Server(object):
                 self._do_run()
             LOGGER.info("%s has stopped", self.__class__)
             self._do_exit()
-        except Exception, excpt:
+        except Exception as excpt:
             LOGGER.error("server error: %s", str(excpt))
         #make possible to rerun in future
         self._make_thread()

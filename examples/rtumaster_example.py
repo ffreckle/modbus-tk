@@ -12,9 +12,12 @@
 import serial
 
 import modbus_tk
+from modbus_tk.exceptions import ModbusInvalidResponseError
 import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
 
+
+BAUD = 115200
 
 def main():
     """main"""
@@ -23,13 +26,22 @@ def main():
     try:
         #Connect to the slave
         master = modbus_rtu.RtuMaster(
-            serial.Serial(port=1, baudrate=9600, bytesize=8, parity='N', stopbits=1, xonxoff=0)
+            serial.Serial('/dev/ttyAMA0', baudrate=BAUD, bytesize=8, parity='N', stopbits=1, xonxoff=0)
         )
-        master.set_timeout(5.0)
         master.set_verbose(True)
         logger.info("connected")
 
-        logger.info(master.execute(1, cst.READ_HOLDING_REGISTERS, 100, 3))
+        try:
+            logger.info(master.execute(1, cst.READ_HOLDING_REGISTERS, 100, 3))
+        except Exception, ModbusInvalidResponseError:
+            pass
+
+        for i in xrange(0,10):
+            try:
+                logger.info(master.execute(1, cst.READ_HOLDING_REGISTERS, 100+i, 50))
+            except Exception, err:
+                logger.info("Exception: %s", err)
+
 
         #send some queries
         #logger.info(master.execute(1, cst.READ_COILS, 0, 10))

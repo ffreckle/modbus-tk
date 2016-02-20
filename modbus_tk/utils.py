@@ -13,8 +13,13 @@ import threading
 import logging
 import socket
 import select
+import six
+
 from modbus_tk import LOGGER
 
+# In Python 3, we are getting proper bytes and ord is not necessary.
+if not six.binary_type == str:
+    ord = lambda b : b
 
 def threadsafe_function(fcn):
     """decorator making sure that the decorated function is thread safe"""
@@ -25,7 +30,7 @@ def threadsafe_function(fcn):
         lock.acquire()
         try:
             ret = fcn(*args, **kwargs)
-        except Exception, excpt:
+        except Exception as excpt:
             raise excpt
         finally:
             lock.release()
@@ -67,7 +72,7 @@ class ConsoleHandler(logging.Handler):
 
     def emit(self, record):
         """format and print the record on the console"""
-        print self.format(record)
+        print (self.format(record))
 
 
 class LogitHandler(logging.Handler):
@@ -126,10 +131,11 @@ def swap_bytes(word_val):
 
 def calculate_crc(data):
     """Calculate the CRC16 of a datagram"""
+    LOGGER.debug("Data: %s", data)
     crc = 0xFFFF
     for i in data:
         crc = crc ^ ord(i)
-        for j in xrange(8):
+        for j in six.moves.range(8):
             tmp = crc & 1
             crc = crc >> 1
             if tmp:
@@ -176,7 +182,7 @@ class WorkerThread(object):
                 self._fcts[0](*self._args)
             while self._go.isSet():
                 self._fcts[1](*self._args)
-        except Exception, excpt:
+        except Exception as excpt:
             LOGGER.error("error: %s", str(excpt))
         finally:
             if self._fcts[2]:

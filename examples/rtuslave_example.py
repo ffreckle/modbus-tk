@@ -16,14 +16,17 @@ import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
 import serial
 
+# Does this get automatically rsynced?
+
+BAUD = 115200
 
 def main():
     """main"""
     logger = modbus_tk.utils.create_logger(name="console", record_format="%(message)s")
 
     #Create the server
-    server = modbus_rtu.RtuServer(serial.Serial(0))
-
+    server = modbus_rtu.RtuServer(serial.Serial('/dev/ttyAMA0', baudrate=BAUD, bytesize=8, parity='N', stopbits=1, xonxoff=0))
+    server.set_verbose(True)
     try:
         logger.info("running...")
         logger.info("enter 'quit' for closing the server")

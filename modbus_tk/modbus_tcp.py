@@ -209,7 +209,7 @@ class TcpMaster(Master):
         Do not take expected_length into account because the length of the response is
         written in the mbap. Used for RTU only
         """
-        response = ""
+        response = b""
         length = 255
         while len(response) < length:
             rcv_byte = self._sock.recv(1)
@@ -304,7 +304,7 @@ class TcpServer(Server):
 
                     # handle all other sockets
                     sock.settimeout(1.0)
-                    request = ""
+                    request = b""
                     is_ok = True
 
                     #read the 7 bytes of the mbap
@@ -330,7 +330,7 @@ class TcpServer(Server):
                                 request += new_byte
 
                     if is_ok:
-                        response = ""
+                        response = b""
                         #parse the request
                         try:
                             response = self._handle(request)
